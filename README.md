@@ -67,6 +67,7 @@ const { documentId } = await c.createDocument({
 
 ```ts
 const user = await c.getDocument(documentId);
+// returns document or null
 ```
 
 #### Set a document
