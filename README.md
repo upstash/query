@@ -51,7 +51,7 @@ const c = q.createCollection<User>({...
 
 Otherwise it can be tedious to create multiple collections.
 
-Insert a document
+#### Insert a document
 
 ```ts
 const { documentId } = await c.createDocument({
@@ -63,7 +63,7 @@ const { documentId } = await c.createDocument({
 });
 ```
 
-Get a document
+#### Get a document
 
 ```ts
 const user = await c.getDocument(documentId);
@@ -91,7 +91,7 @@ const { documentId } = await c.setDocument(documentId, {
 });
 ```
 
-Delete a document
+#### Delete a document
 
 ```ts
 await c.deleteDocument(documentId);
