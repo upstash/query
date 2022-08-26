@@ -35,6 +35,22 @@ const c = new Collection<User>({
 });
 ```
 
+I think I want to change this to something like:
+
+```ts
+import { Query } from "@upstash/query";
+import { Redis } from "@upstash/redis";
+
+const q = new Query({
+    redis: Redis.fromEnv(),
+    encoderDecoder: ...
+})
+// Create a collection
+const c = q.createCollection<User>({...
+```
+
+Otherwise it can be tedious to create multiple collections.
+
 Insert a document
 
 ```ts
