@@ -67,7 +67,18 @@ const { documentId } = await c.createDocument({
 
 ```ts
 const user = await c.getDocument(documentId);
-// returns document or null
+// returns  null if not found
+{
+    "id": "doc_a61ee39e4b5a43a08c6e5a5cee45b77d",
+    "data": {
+      "name": {
+        "first": "andreas",
+        "last": "thomas",
+      },
+      "age": 29,
+    },
+    "ts": 1661544215734, // createdAt timestamp, not sure if we need this tbh
+  }
 ```
 
 #### Set a document
