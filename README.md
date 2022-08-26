@@ -69,10 +69,12 @@ const { documentId } = await c.createDocument({
 const user = await c.getDocument(documentId);
 ```
 
-Set a document: this overwrites the document We can't do a partial update,
-because there's no way to do this atomically using redis `STRING`. We would have
-to read the document, decode it, update some fields, encode it again and then
-write to redis. That's a little bit too complicated to do in lua for an MVP.
+#### Set a document
+
+This overwrites the document. We can't do a partial update, because there's no
+way to do this atomically using redis `STRING`. We would have to read the
+document, decode it, update some fields, encode it again and then write to
+redis. That's a little bit too complicated to do in lua for an MVP.
 
 Initially I used a `HASH` to store the individual fields of a document but this
 was very costly when retrieving multiple documents, because `HMGET` works on a
