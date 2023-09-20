@@ -69,7 +69,7 @@ export class Index<TData extends Data, TTerms extends DotNotation<TData>[]> {
   public async index(tx: Pipeline, documents: Document<TData>[]): Promise<void> {
     for (const document of documents) {
       const terms = this.terms.reduce((acc, field) => {
-        // rome-ignore lint/suspicious/noExplicitAny: this is fine
+        // biome-ignore lint/suspicious/noExplicitAny: this is fine
         let v: any = document.data;
 
         for (const key of field.split(".")) {
@@ -77,7 +77,7 @@ export class Index<TData extends Data, TTerms extends DotNotation<TData>[]> {
             v = v[key];
           }
         }
-        // rome-ignore lint/suspicious/noExplicitAny: this is fine
+        // biome-ignore lint/suspicious/noExplicitAny: this is fine
         acc[field] = v as any;
         return acc;
       }, {} as TData);
@@ -108,7 +108,6 @@ export class Index<TData extends Data, TTerms extends DotNotation<TData>[]> {
     for (const key of keys) {
       // const value = path.reduce((acc, key) => acc[key], terms);
       bufs.push(new TextEncoder().encode(key as string));
-      // rome-ignore lint/style/noNonNullAssertion: <explanation>
       bufs.push(new TextEncoder().encode(this.enc.encode(terms[key]!)));
     }
     const buf = new Uint8Array(bufs.reduce((acc, b) => acc + b.length, 0));
@@ -125,7 +124,7 @@ export class Index<TData extends Data, TTerms extends DotNotation<TData>[]> {
   };
 
   public match = async (
-    matches: Record<ArrToKeys<TTerms>, Field>,
+    matches: Record<ArrToKeys<TTerms>, TData[ArrToKeys<TTerms>]>, 
   ): Promise<Document<TData>[]> => {
     const hash = await this.hashTerms(matches);
     const ids = await this.redis.smembers(this.indexKey({ hash }));

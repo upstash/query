@@ -26,7 +26,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "bun build ./src/query.ts --format=esm --outdir=./dist",
     "fmt": "pnpm biome check . && pnpm biome format . --write"
   },
   "devDependencies": {

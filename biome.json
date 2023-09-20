@@ -1,6 +1,5 @@
 {
-  "$schema": "./node_modules/rome/configuration_schema.json",
-
+  "$schema": "https://biomejs.dev/schemas/1.0.0/schema.json",
   "linter": {
     "enabled": true,
     "rules": {
@@ -9,22 +8,23 @@
         "noUnusedVariables": "warn"
       },
       "security": {
-        "noDangerouslySetInnerHtml": "off"
+        "noDangerouslySetInnerHtml": "off" 
       },
       "style": {
-        "useBlockStatements": "error"
+        "useBlockStatements": "error",
+        "noNonNullAssertion": "off"
       },
       "performance": {
         "noDelete": "off"
-      }
+      } 
     },
-    "ignore": ["node_modules", ".next", "dist", ".nuxt", ".contentlayer"]
+    "ignore": ["node_modules", "dist"]
   },
   "formatter": {
     "indentStyle": "space",
     "indentSize": 2,
     "enabled": true,
     "lineWidth": 100,
-    "ignore": ["node_modules", ".next", "dist", ".nuxt", ".contentlayer"]
+    "ignore": ["node_modules","dist"]
   }
 }

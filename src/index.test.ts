@@ -1,4 +1,4 @@
-import { expect, test, describe } from "bun:test";
+import { expect, test, describe, Test } from "bun:test";
 import { Collection } from "./collection";
 import { Redis } from "@upstash/redis";
 
@@ -186,7 +186,7 @@ describe("match", () => {
                 }
 
             })
-            
+
 
 
         })
@@ -291,5 +291,51 @@ describe("match", () => {
             })
         })
 
+        describe("compound terms", async () => {
+            describe("empty collection", () => {
+                test("returns empty", async () => {
+                    const c = new Collection<TestData>({ name: crypto.randomUUID(), redis: Redis.fromEnv({ automaticDeserialization: false }) })
+                    const i = c.createIndex({ name: crypto.randomUUID(), terms: ["b", "s", "n"] })
+
+                    const matches = await i.match({ b: true, s: "s", n: 1 })
+                    expect(matches.length).toEqual(0)
+
+                })
+            })
+
+            test("returns matches", async () => {
+                const c = new Collection<TestData>({ name: crypto.randomUUID(), redis: Redis.fromEnv({ automaticDeserialization: false }) })
+                const i = c.createIndex({ name: crypto.randomUUID(), terms: ["b", "s", "n"] })
+
+                const seed = generateSeed()
+                for (const s of seed) {
+                    await c.set(s.id, s.data)
+                }
+
+
+                const expectedMatches = seed.filter(v => v.data.s === seed[0].data.s)
+                const matches = await i.match({ b: seed[0].data.b, s:seed[0].data.s, n:seed[0].data.n })
+                expect(matches.length).toEqual(expectedMatches.length)
+                for (const e of expectedMatches) {
+                    const matched = matches.find(m => m.id === e.id)
+                    expect(matched).toBeDefined()
+                    expect(matched?.data).toEqual(e.data)
+                }
+
+            })
+        })
+
+
+    })
+
+
+
+    describe("updating a document", () => {
+
+
+        test("no longer match after the term changed", async () => {
+            const c = new Collection<{ value: string }>({ name: crypto.randomUUID(), redis: Redis.fromEnv({ automaticDeserialization: false }) })
+            const i = c.createIndex({ name: crypto.randomUUID(), terms: ["value"] })
+        })
     })
 })
