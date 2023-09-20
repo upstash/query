@@ -1,5 +1,5 @@
-import { Collection } from "./pkg/collection.ts";
-import { Redis } from "https://deno.land/x/upstash_redis@v1.12.0/mod.ts";
+import { Redis } from "@upstash/redis";
+import { Collection } from "./src/collection";
 
 type User = {
   name: {
@@ -10,31 +10,43 @@ type User = {
   email: string;
 };
 
-const c = new Collection<User>({
+
+async function main(){
+
+
+const users = new Collection<User>({
   name: "test",
   redis: new Redis({
     url: "https://eu2-driven-skink-30677.upstash.io",
     token:
       "AXfVASQgOGExMmUxM2QtNTcwMy00MjY1LWI5ZGQtZDk4MGJkNTk5YTk4MTdmMDU0NTYwM2E1NDgzNzhmNmJmMjFkNjQ0NjBmZGY=",
-    automaticDeserialization: false
+    automaticDeserialization: false,
   }),
-
 });
 
-const i = c.createIndex({
+const usersByName = users.createIndex({
   name: "users_by_name",
   terms: ["name.first"],
 });
 
-const { documentId } = await c.createDocument({
+await users.set("andreas", {
   name: { first: "andreas", last: "thomas" },
   age: 29,
   email: "andreas@upstash.com",
 });
-console.log({ documentId });
 
-const user = await c.readDocument(documentId);
+const user = await users.get("andreas");
 console.log({ user });
 
-const match = await i.match({ "name.first": "andreas" });
+const match = await usersByName.match({ "name.first": "andreas" });
+
+match.at(0)?.data;
+
 console.log(JSON.stringify({ match }, null, 2));
+
+await users.delete("andreas");
+
+console.log(await usersByName.match({ "name.first": "andreas" }));
+
+}
+main()

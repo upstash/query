@@ -1,16 +1,13 @@
-import { ArrToKeys, Data, Document, Field } from "./types.ts";
-import type { DotNotation } from "./dot-notation.ts";
-import { Collection } from "./collection.ts";
-import { Redis } from "https://deno.land/x/upstash_redis@v1.12.0/mod.ts";
-import { Event, Interceptor } from "./interceptor.ts";
-import { Pipeline } from "https://deno.land/x/upstash_redis@v1.12.0/pkg/pipeline.ts";
-import { INDEX_PREFIX } from "./constants.ts";
-import type { EncoderDecoder } from "./encoding.ts";
+import { Redis } from "@upstash/redis";
+import type { Pipeline } from "@upstash/redis/types/pkg/pipeline";
+import { Collection } from "./collection";
+import { INDEX_PREFIX } from "./constants";
+import type { DotNotation } from "./dot-notation";
+import type { EncoderDecoder } from "./encoding";
+import { Event, Interceptor } from "./interceptor";
+import { ArrToKeys, Data, Document, Field } from "./types";
 
-export type IndexConfig<
-  TData extends Data,
-  TTerms extends DotNotation<TData>[],
-> = {
+export type IndexConfig<TData extends Data, TTerms extends DotNotation<TData>[]> = {
   name: string;
   collection: Collection<TData>;
   terms: TTerms;
@@ -36,10 +33,7 @@ export class Index<TData extends Data, TTerms extends DotNotation<TData>[]> {
     this.interceptor = cfg.interceptor;
     this.enc = cfg.enc;
 
-    this.interceptor.listen(
-      Event.CREATE,
-      async (tx, documents) => await this.index(tx, documents),
-    );
+    this.interceptor.listen(Event.CREATE, async (tx, documents) => await this.index(tx, documents));
 
     // this.interceptor.listen(
     //     Event.UPDATE,
@@ -49,45 +43,33 @@ export class Index<TData extends Data, TTerms extends DotNotation<TData>[]> {
     //     },
     // )
 
-    // this.interceptor.listen(
-    //     Event.DELETE,
-    //     async (tx, ...docs) => await this.removeFromIndex(tx, docs.map((doc) => doc.id)),
-    // )
+    this.interceptor.listen(
+      Event.DELETE,
+      async (tx, documents) =>
+        await this.removeFromIndex(
+          tx,
+          documents.map((doc) => doc.id),
+        ),
+    );
   }
 
   /**
    * Build the key for a given document id or hash
    */
-  private key(
-    arg: { id: string; hash?: never } | { id?: never; hash: string },
-  ): string {
+  private indexKey(arg: { id: string; hash?: never } | { id?: never; hash: string }): string {
     if (arg.id) {
-      return [
-        this.collection.prefix(),
-        INDEX_PREFIX,
-        this.name,
-        "document_ids",
-        arg.id,
-      ].join(":");
+      return [this.collection.prefix(), INDEX_PREFIX, this.name, "document_ids", arg.id].join(":");
     }
     if (arg.hash) {
-      return [
-        this.collection.prefix(),
-        INDEX_PREFIX,
-        this.name,
-        "hashes",
-        arg.hash,
-      ].join(":");
+      return [this.collection.prefix(), INDEX_PREFIX, this.name, "hashes", arg.hash].join(":");
     }
     throw new Error(`Invalid argument ${arg}`);
   }
 
-  public async index(
-    tx: Pipeline,
-    documents: Document<TData>[],
-  ): Promise<void> {
+  public async index(tx: Pipeline, documents: Document<TData>[]): Promise<void> {
     for (const document of documents) {
       const terms = this.terms.reduce((acc, field) => {
+        // rome-ignore lint/suspicious/noExplicitAny: this is fine
         let v: any = document.data;
 
         for (const key of field.split(".")) {
@@ -95,26 +77,38 @@ export class Index<TData extends Data, TTerms extends DotNotation<TData>[]> {
             v = v[key];
           }
         }
+        // rome-ignore lint/suspicious/noExplicitAny: this is fine
         acc[field] = v as any;
         return acc;
       }, {} as TData);
       const hash = await this.hashTerms(terms);
       const id = document.id;
 
-      tx.sadd(this.key({ id }), hash);
+      tx.sadd(this.indexKey({ id }), hash);
 
-      tx.sadd(this.key({ hash }), id);
+      tx.sadd(this.indexKey({ hash }), id);
     }
   }
 
-  private hashTerms = async (
-    terms: Record<ArrToKeys<TTerms>, unknown>,
-  ): Promise<string> => {
+  private async removeFromIndex(tx: Pipeline, documentIds: string[]): Promise<void> {
+    for (const documentId of documentIds) {
+      const indexKey = this.indexKey({ id: documentId });
+
+      const hashes = await this.redis.smembers(indexKey);
+      for (const hash of hashes) {
+        tx.srem(this.indexKey({ hash }), documentId);
+      }
+      tx.del(indexKey);
+    }
+  }
+
+  private hashTerms = async (terms: Record<ArrToKeys<TTerms>, unknown>): Promise<string> => {
     const keys = Object.keys(terms).sort() as TTerms;
     const bufs: Uint8Array[] = [];
     for (const key of keys) {
       // const value = path.reduce((acc, key) => acc[key], terms);
       bufs.push(new TextEncoder().encode(key as string));
+      // rome-ignore lint/style/noNonNullAssertion: <explanation>
       bufs.push(new TextEncoder().encode(this.enc.encode(terms[key]!)));
     }
     const buf = new Uint8Array(bufs.reduce((acc, b) => acc + b.length, 0));
@@ -125,22 +119,21 @@ export class Index<TData extends Data, TTerms extends DotNotation<TData>[]> {
     }
 
     const hash = await crypto.subtle.digest("SHA-256", buf);
-    return Array.from(new Uint8Array(hash)).map((b) =>
-      b.toString(16).padStart(2, "0")
-    ).join("");
+    return Array.from(new Uint8Array(hash))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
   };
 
   public match = async (
     matches: Record<ArrToKeys<TTerms>, Field>,
-  ): Promise<Document<Pick<TData, TValues[number]>>[]> => {
+  ): Promise<Document<TData>[]> => {
     const hash = await this.hashTerms(matches);
-    const ids = await this.redis.smembers(this.key({ hash }));
-    console.log("matching", { matches, hash, ids });
+    const ids = await this.redis.smembers(this.indexKey({ hash }));
     if (ids.length === 0) {
       return [];
     }
 
-    const documents = await this.collection.listDocuments(ids);
+    const documents = await this.collection.list(ids);
 
     return documents;
   };

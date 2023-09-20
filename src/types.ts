@@ -1,6 +1,12 @@
-export type Field = string | number | boolean | null | Field[] | {
-  [key: string]: Field;
-};
+export type Field =
+  | string
+  | number
+  | boolean
+  | null
+  | Field[]
+  | {
+      [key: string]: Field;
+    };
 
 export type Data = Record<string, Field>;
 

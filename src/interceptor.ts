@@ -1,5 +1,5 @@
-import { Data, Document } from "./types.ts";
-import { Pipeline } from "https://deno.land/x/upstash_redis@v1.12.0/pkg/pipeline.ts";
+import type { Pipeline } from "@upstash/redis/types/pkg/pipeline";
+import { Data, Document } from "./types";
 
 export enum Event {
   CREATE = "create",
@@ -54,15 +54,9 @@ export class Interceptor<TData extends Data> {
     };
   }
 
-  public async emit(
-    event: Event,
-    tx: Pipeline,
-    ...documents: Document<TData>[]
-  ) {
+  public async emit(event: Event, tx: Pipeline, ...documents: Document<TData>[]) {
     await Promise.all(
-      Object.values(this.callbacks[event]).map(async (cb) =>
-        await cb(tx, documents)
-      ),
+      Object.values(this.callbacks[event]).map(async (cb) => await cb(tx, documents)),
     );
   }
 }
