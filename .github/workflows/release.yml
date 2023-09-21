@@ -22,26 +22,24 @@ jobs:
           node-version: lts/*
 
       - name: Install bun
-        run: |
-          curl -fsSL https://bun.sh/install | bash
-          source /home/runner/.bashrc 
+        run:   curl -fsSL https://bun.sh/install | bash
            
       - name: Set package version
-        run: bun ./scripts/set-version.js . ${{ env.VERSION }}
+        run: ~/.bun/bin ./scripts/set-version.js . ${{ env.VERSION }}
 
       - name: Install
-        run: bun install
+        run: ~/.bun/bin install
 
       - name: Build package
-        run: bun run build
+        run: ~/.bun/bin run build
 
       - name: Authenticate Registry
         run: npm set "//registry.npmjs.org/:_authToken" ${{ secrets.NPM_TOKEN }}
         
       - name: Publish canary
         if: "github.event.release.prerelease"
-        run: pnpm publish --access public --tag=canary --no-git-checks 
+        run: npm publish --access public --tag=canary --no-git-checks 
 
       - name: Publish
         if: "!github.event.release.prerelease"
-        run: pnpm publish --access public --no-git-checks 
+        run: npm publish --access public --no-git-checks 
