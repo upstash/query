@@ -147,6 +147,29 @@ export class Index<TData extends Data, TTerms extends DotNotation<TData>[]> {
 
     const documents = await this.collection.list(ids);
 
+    /**
+     * Because transactions do not roll back, it could happen that we still have references to documents
+     * that have been deleted already.
+     *
+     * Or maybe the user has manually deleted stuff without reindexing
+     *
+     * In this case we're cleaning up the index now.
+     */
+    if (documents.length < ids.length) {
+      const found = documents.reduce((acc, d) => {
+        acc[d.id] = true;
+        return acc;
+      }, {} as Record<string, boolean>);
+
+      const notFound = ids.filter((id) => !found[id]);
+
+      if (notFound.length > 0) {
+        const tx = this.redis.pipeline();
+        await this.removeFromIndex(tx, notFound);
+        await tx.exec();
+      }
+    }
+
     return documents;
   };
 }

@@ -422,3 +422,22 @@ describe("reindexing", () => {
     expect(fixedMatches.length).toBe(500);
   }, 300_000);
 });
+
+test("match cleans up broken references", async () => {
+  const redis = Redis.fromEnv({ automaticDeserialization: false });
+  const c = new Collection<{ value: string }>({
+    name: crypto.randomUUID(),
+    redis,
+  });
+
+  const i = c.createIndex({ name: crypto.randomUUID(), terms: ["value"] });
+
+  await c.set("id1", { value: "value" });
+  await c.set("id2", { value: "value" });
+  const removed = await redis.del(c.documentKey("id1"));
+  expect(removed).toEqual(1);
+
+  const found = await i.match({ value: "value" });
+  expect(found.length).toEqual(1);
+  expect(found[0].id).toEqual("id2");
+});
