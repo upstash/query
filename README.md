@@ -67,16 +67,7 @@ type User = {
   // Create and store your first user
   await users.set("documentId", user);
 
-  // Let's generate some more users
-  for (let i = 0; i < 10; i++) {
-    const user: User = {
-      id: crypto.randomUUID(),
-      name: faker.person.fullName(),
-      organization: faker.company.name(),
-      email: faker.internet.email(),
-    };
-    await users.set(user.id, user);
-  }
+
 
   /**
    * Now we can use the previously created index to query by organization
