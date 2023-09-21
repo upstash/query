@@ -21,15 +21,14 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install bun
-        run: curl -fsSL https://bun.sh/install | bash
-
+        run:     curl -fsSL https://bun.sh/install | bash
       - name: Install dependencies
-        run: ~/.bun/bin install
+        run: ~/.bun/bin/bun install
         
       - name: Run tests
-        run: ~/.bun/bin test --coverage
+        run: ~/.bun/bin/bun test --coverage
       
       - name: Build
-        run: ~/.bun/bin run build
+        run: ~/.bun/bin/bun run build
 
   
