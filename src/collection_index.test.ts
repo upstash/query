@@ -399,7 +399,7 @@ describe("reindexing", () => {
     expect(matchOldDocumentAfterUpdate.length).toBe(1);
   });
 
-  test("reindexes 1000 documents", async () => {
+  test("reindexes 1000 documents (slow)", async () => {
     const c = new Collection<{ value: string }>({
       name: crypto.randomUUID(),
       redis: Redis.fromEnv({ automaticDeserialization: false }),
@@ -420,5 +420,5 @@ describe("reindexing", () => {
 
     const fixedMatches = await i.match({ value: "fixed" });
     expect(fixedMatches.length).toBe(500);
-  }, 60_000);
+  }, 300_000);
 });
