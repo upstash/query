@@ -21,11 +21,10 @@ jobs:
         with:
           node-version: lts/*
 
-      - name: Install bun
-        run: curl -fsSL https://bun.sh/install | bash
-
-     
-      
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+           
       - name: Set package version
         run: bun ./scripts/set-version.js . ${{ env.VERSION }}
 
