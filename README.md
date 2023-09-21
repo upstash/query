@@ -1,171 +1,183 @@
-# @upstash/query
+<div align="center">
+    <h1 align="center">@upstash/query</h1>
+    <h5>Search for Upstash Redis</h5>
+</div>
+
+<div align="center">
+  <a href="https://upstash.com?ref=@upstash/query">upstash.com</a>
+</div>
+<br/>
+
+
+`@upstash/query` offers secondary indexing and search capabilities for Upstash Redis. It is fully managed by Upstash and scales automatically.
+
+## Features
+- [x] **E2E Typesafe**: Fully typed API with TypeScript generics to offer the best developer experience.
+- [x] **Secondary Indexing**: Create indexes on your data and query them with a simple API.
+- [ ] **Range Queries**: Query your data with range queries. Either numeric or lexicographic.
+
+
+## Quickstart
+
+```ts
+import { Redis } from "@upstash/redis";
+// import { Redis } from "@upstash/redis/cloudflare"; // for Cloudflare Workers
+// import { Redis } from "@upstash/redis/fastly"; // for Fastly Compute@Edge
+import { Query } from "./query";
+
+/**
+ * Define a custom type for your documents
+ */
+type User = {
+    id: string;
+    name: string;
+    organization: string;
+    email: string;
+  };
+
+  /**
+   * Initialize the client
+   */
+  const q = new Query({
+    redis: Redis.fromEnv({ automaticDeserialization: false }), // <- important to turn it off as @upstash/query handles deserialization itself
+  });
+
+  /**
+   * Create your first collection.
+   *
+   * Please make sure you're passing in a type to take full advantage of @upstash/query
+   */
+  const users = q.createCollection<User>("users");
+
+  /**
+   * Create a searchable index on the collection and specify which terms we are filtering by
+   * terms are fully typed as long as you have defined a custom type when creating the collection
+   */
+  const usersByOrganization = users.createIndex({
+    name: "users_by_organization",
+    terms: ["organization"],
+  });
+
+  const user: User = {
+    id: "chronark",
+    name: "Andreas Thomas",
+    organization: "Upstash",
+    email: "andreas@upstash.com",
+  };
+  // Create and store your first user
+  await users.set("documentId", user);
+
+  // Let's generate some more users
+  for (let i = 0; i < 10; i++) {
+    const user: User = {
+      id: crypto.randomUUID(),
+      name: faker.person.fullName(),
+      organization: faker.company.name(),
+      email: faker.internet.email(),
+    };
+    await users.set(user.id, user);
+  }
+
+  /**
+   * Now we can use the previously created index to query by organization
+   */
+  const upstashEmployees = await usersByOrganization.match({ organization: "Upstash" });
+  /**
+   * [
+   *     {
+   *         id: "documentId",
+   *         ts: 000, // the timestamp when created or last updated
+   *         data: {
+   *             id: "chronark",
+   *             name: "Andreas Thomas",
+   *             organization: "Upstash",
+   *             email: "andreas@upstash.com"
+   *         }
+   *     }
+   * ]
+   */
+  ```
+
+
 
 ## API Reference
 
-### Collections
+### Query
+
+#### `constructor(options: QueryOptions)`
+
+#### `.createCollection(name: string)`
+
+Create a new collection by giving it a name and document type.
 
 ```ts
-type User = {
-  name: {
-    first: string;
-    last: string;
-  };
-  age: number;
-};
+const users = q.createCollection<User>("users");
+```
 
-import { Collection } from "@upstash/query";
-import { Redis } from "@upstash/redis";
 
-// Create a collection
-const c = new Collection<User>({
-  name: "users",
-  redis: Redis.fromEnv(),
-  /**
-   *  Optionally a custom encoder can be specified, default is json
-   *
-   * export interface EncoderDecoder {
-   *   encode<T = unknown>(data: T): string;
-   *   decode<T = unknown>(s: string): T;
-   * }
-   */
-  encoderDecoder: {
-    encode: (data) => JSON.stringify(data),
-    decode: (str) => JSON.parse(s),
-  },
+### Collection
+
+
+#### `.set(id: string, data: T): Promise<void>`
+
+Insert a new document to the collection.
+This will throw an error if the document already exists.
+
+
+```ts
+await users.set(userId, user)
+```
+
+#### `.get(id: string): Promise<Document<T> | null>`
+Get a document by id.
+
+```ts
+const document = await users.get(userId)
+// {
+//     id: userId,
+//     ts: 000, // the timestamp when created or last updated
+//     data: {} // the data you have stored
+// }
+```
+
+#### `.delete(id: string): Promise<void>`
+
+Delete a document by id.
+
+```ts
+await users.delete(userId)
+```
+
+#### `.update(id: string, data: T): Promise<void>`
+
+Update a document by id.
+This will throw an error if the document does not exist.
+
+```ts
+user.name = "New Name"
+await users.update(userId, user)
+```
+
+#### `.createIndex(options: CreateIndexOptions<T>): Index<T>`
+Create a new index on the collection.
+The terms field will be strongly typed depending on the type you have passed in when creating the collection.
+
+```ts
+const usersByOrganization = users.createIndex({
+    name: "users_by_organization",
+    terms: ["organization"],
 });
 ```
 
-I think I want to change this to something like:
+### Index
+
+#### `.match(query): Promise<Document<T>[]>`
+
+Search for matches in the index.
+The `query` argument is strongly typed depending on the terms you have passed in when creating the index.
 
 ```ts
-import { Query } from "@upstash/query";
-import { Redis } from "@upstash/redis";
-
-const q = new Query({
-    redis: Redis.fromEnv(),
-    encoderDecoder: ...
-})
-// Create a collection
-const c = q.createCollection<User>({...
+const upstashEmployees = await usersByOrganization.match({ 
+    organization: "Upstash" 
+  });
 ```
-
-Otherwise it can be tedious to create multiple collections.
-
-#### Insert a document
-
-```ts
-const { documentId } = await c.createDocument({
-  name: {
-    first: "John",
-    last: "Doe",
-  },
-  age: 42,
-});
-```
-
-#### Get a document
-
-```ts
-const user = await c.getDocument(documentId);
-// returns  null if not found
-{
-    "id": "doc_a61ee39e4b5a43a08c6e5a5cee45b77d",
-    "data": {
-      "name": {
-        "first": "andreas",
-        "last": "thomas",
-      },
-      "age": 29,
-    },
-    "ts": 1661544215734, // createdAt timestamp, not sure if we need this tbh
-  }
-```
-
-#### Set a document
-
-This overwrites the document. We can't do a partial update, because there's no
-way to do this atomically using redis `STRING`. We would have to read the
-document, decode it, update some fields, encode it again and then write to
-redis. That's a little bit too complicated to do in lua for an MVP.
-
-Initially I used a `HASH` to store the individual fields of a document but this
-was very costly when retrieving multiple documents, because `HMGET` works on a
-single hash, while `MGET` works on multiple keys
-
-Using this approach, we can retrieve all documents, that match a secondary index
-query, in a single `MGET` call (as long as the total size does not exceed the
-1MB limit)
-
-Let me know what you think about that tradeoff
-
-```ts
-const { documentId } = await c.setDocument(documentId, {
-  name: { first: "John", last: "Doe" },
-  age: 42,
-});
-```
-
-#### Delete a document
-
-```ts
-await c.deleteDocument(documentId);
-```
-
-### Secondary Indices
-
-Same types from above
-
-Give the index a name and an array of `terms` each term is a path to a field in
-the document and is using some typescript magic, to only allow paths that are
-actually valid for the document. (If I would set `terms: ["name.hello"]` I would
-get a type error)
-
-```ts
-const index = c.createIndex({
-  name: "users_by_name",
-  terms: ["name.first"],
-});
-```
-
-Query the index
-
-```ts
-const match = await i.match({ "name.first": "andreas" });
-
-// returns
-[
-  {
-    "id": "doc_a61ee39e4b5a43a08c6e5a5cee45b77d",
-    "data": {
-      "name": {
-        "first": "andreas",
-        "last": "thomas",
-      },
-      "age": 29,
-    },
-    "ts": 1661544215734,
-  },
-  {
-    // other hits
-  },
-];
-```
-
-## Range Queries
-
-Secondary indices are good for exact matches, but we can use sorted sets to do
-ranged queries too
-
-```ts
-const r = c.createRangeIndex({
-  name: "users_by_age",
-  term: "age",
-});
-
-// supported are: gt, gte, lt, lte
-const olderThan30 = await r.range({ gt: 30 });
-// returns the same as a regular index
-```
-
-Technically we can also use sorted sets to do lexicographical queries, but this
-is enough as an MVP I think.

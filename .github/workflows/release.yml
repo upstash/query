@@ -25,7 +25,9 @@ jobs:
         run:   curl -fsSL https://bun.sh/install | bash
            
       - name: Set package version
-        run: ~/.bun/bin/bun ./scripts/set-version.js . ${{ env.VERSION }}
+        run: |
+          ~/.bun/bin/bun ./scripts/set-version.js . ${{ env.VERSION }}
+          echo "export const VERSION='${{ env.VERSION }}'" > ./src/version.ts
 
       - name: Install
         run: ~/.bun/bin/bun install
