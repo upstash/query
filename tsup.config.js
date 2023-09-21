@@ -1,7 +1,7 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ["./src/query.ts"],
+  entry: ["./src/index.ts"],
   format: ["cjs", "esm"],
   splitting: true,
   sourcemap: true,

@@ -1,14 +1,14 @@
 {
   "name": "@upstash/query",
-  "version": "0.0.1",
+  "version": "0.0.1-canary.0",
   "description": "Secondary indexing for Redis",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/upstash/query.git"
   },
-  "module": "./dist/query.js",
-  "main": "./dist/query.js",
-  "types": "./dist/query.d.ts",
+  "module": "./dist/index.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "keywords": [
     "redis",
     "query",
@@ -26,20 +26,21 @@
     "dist"
   ],
   "scripts": {
-    "build": "bun build ./src/query.ts --format=esm --outdir=./dist",
-    "fmt": "pnpm biome check . && pnpm biome format . --write"
+    "build": "tsup",
+    "fmt": "pnpm biome format . --write && pnpm biome check . --apply-unsafe"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.0.0",
+    "@faker-js/faker": "^8.1.0",
     "@types/crypto-js": "^4.1.1",
     "@types/node": "^20.5.7",
     "bun-types": "^1.0.2",
     "next": "^13.4.19",
     "tsup": "^7.2.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "@upstash/redis": "^1.22.0"
   },
   "dependencies": {
-    "@upstash/redis": "^1.22.0",
     "crypto-js": "^4.1.1"
   },
   "type": "module"

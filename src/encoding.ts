@@ -10,23 +10,20 @@ export interface EncoderDecoder {
  * Json implements the EncoderDecoder using javascripts `JSON` utility.
  */
 export class Json implements EncoderDecoder {
-  public readonly debug: boolean
+  public readonly debug: boolean;
   constructor(opts?: { debug?: boolean }) {
-    this.debug = opts?.debug ?? false
+    this.debug = opts?.debug ?? false;
   }
   encode<T = unknown>(data: T): string {
     if (this.debug) {
-      console.debug("encoding", data)
-
+      console.debug("encoding", data);
     }
     return JSON.stringify(data, null, 2);
   }
   decode<T = unknown>(s: string): T {
     if (this.debug) {
-      console.debug("decoding", s)
+      console.debug("decoding", s);
     }
     return JSON.parse(s);
   }
 }
-
-

@@ -7,8 +7,8 @@
 type NestedPaths<T> = T extends string | number | boolean
   ? []
   : {
-    [K in Extract<keyof T, string>]: [K, ...NestedPaths<T[K]>];
-  }[Extract<keyof T, string>];
+      [K in Extract<keyof T, string>]: [K, ...NestedPaths<T[K]>];
+    }[Extract<keyof T, string>];
 
 /**
  * Joins an array of strings, separated by `.`
@@ -22,8 +22,8 @@ type Join<T> = T extends []
   ? F
   : T extends [infer F, ...infer R]
   ? F extends string
-  ? `${F}.${Join<Extract<R, string[]>>}`
-  : never
+    ? `${F}.${Join<Extract<R, string[]>>}`
+    : never
   : string;
 
 /**
@@ -33,11 +33,10 @@ type Join<T> = T extends []
  */
 export type DotNotation<T extends Record<string, unknown>> = Join<NestedPaths<T>>;
 
-
 /**
  * some tests to ensure the type is working
  */
-const _valid: DotNotation<{ a: { b: { c: string } } }> = "a.b.c"
+const _valid: DotNotation<{ a: { b: { c: string } } }> = "a.b.c";
 
 // @ts-expect-error
-const _invalid: DotNotation<{ a: { b: { c: string } } }> = "a.b.d"
+const _invalid: DotNotation<{ a: { b: { c: string } } }> = "a.b.d";

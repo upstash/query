@@ -1,5 +1,5 @@
 import type { Redis } from "@upstash/redis";
-import { Index } from ".";
+import { Index } from "./collection_index";
 import { COLLECTION_PREFIX, DEFAULT_PREFIX } from "./constants";
 import type { DotNotation } from "./dot-notation";
 import { EncoderDecoder, Json } from "./encoding";
@@ -46,6 +46,8 @@ export class Collection<TData extends Data> {
   /**
    * set inserts a new document into the collection.
    *
+   * if the document exists already, it will fail. Use `.update` to modify existing documents
+   *
    * All existing interceptors are called after the document is inserted.
    */
   public async set(id: string, data: TData): Promise<void> {
@@ -57,10 +59,38 @@ export class Collection<TData extends Data> {
       ts: Date.now(),
     };
 
-    const tx = this.redis.pipeline();
-    tx.set(key, this.enc.encode(document));
+    const tx = this.redis.multi();
+    tx.set(key, this.enc.encode(document), { nx: true });
     await this.interceptor.emit(Event.CREATE, tx, document);
-    await tx.exec();
+    const [keyWasSet] = await tx.exec<["number"]>();
+
+    if (!keyWasSet) {
+      throw new Error("TODO: document existed already");
+    }
+  }
+
+  /**
+   * set inserts a new document into the collection.
+   *
+   * All existing interceptors are called after the document is inserted.
+   */
+  public async update(id: string, data: TData): Promise<void> {
+    const key = this.documentKey(id);
+
+    const document: Document<TData> = {
+      id,
+      data,
+      ts: Date.now(),
+    };
+
+    const tx = this.redis.multi();
+    tx.set(key, this.enc.encode(document), { xx: true });
+    await this.interceptor.emit(Event.UPDATE, tx, document);
+    const [keyWasSet] = await tx.exec<["number"]>();
+
+    if (!keyWasSet) {
+      throw new Error("TODO: document didn't exist before");
+    }
   }
 
   /**
@@ -79,7 +109,7 @@ export class Collection<TData extends Data> {
 
   /**
    * list loads multiple documents by their ids or all existing documents if no ids are provided.
-   * 
+   *
    * if a document is not found, we don't include it in the response. Therefore the result array
    * might be shorter than your input documentIds or even be empty
    */
@@ -102,14 +132,16 @@ export class Collection<TData extends Data> {
         }
       }
       if (documentKeys.length > 0) {
-        documents = await this.redis.mget(...documentKeys)
+        documents = await this.redis.mget(...documentKeys);
       }
     }
-    return documents
-      // mget returns null for documents that were not found
-      .filter(d => d !== null)
-      // decode the document
-      .map((d) => this.enc.decode<Document<TData>>(d));
+    return (
+      documents
+        // mget returns null for documents that were not found
+        .filter((d) => d !== null)
+        // decode the document
+        .map((d) => this.enc.decode<Document<TData>>(d))
+    );
   }
 
   /**
@@ -123,7 +155,7 @@ export class Collection<TData extends Data> {
     if (!document) {
       return;
     }
-    const tx = this.redis.pipeline();
+    const tx = this.redis.multi();
     tx.del(key);
     await this.interceptor.emit(Event.DELETE, tx, document);
     await tx.exec();
