@@ -11,6 +11,8 @@
 
 `@upstash/query` offers secondary indexing and search capabilities for Upstash Redis. It is fully managed by Upstash and scales automatically.
 
+This library tested well but not yet production ready. We are looking for feedback: Please open an issue if you have any questions or suggestions.
+
 ## Features
 - [x] **E2E Typesafe**: Fully typed API with TypeScript generics to offer the best developer experience.
 - [x] **Secondary Indexing**: Create indexes on your data and query them with a simple API.
@@ -23,7 +25,7 @@
 import { Redis } from "@upstash/redis";
 // import { Redis } from "@upstash/redis/cloudflare"; // for Cloudflare Workers
 // import { Redis } from "@upstash/redis/fastly"; // for Fastly Compute@Edge
-import { Query } from "./query";
+import { Query } from "@upstash/query";
 
 /**
  * Define a custom type for your documents
@@ -91,84 +93,6 @@ type User = {
 
 
 
-## API Reference
+## Documentation
 
-### Query
-
-#### `constructor(options: QueryOptions)`
-
-#### `.createCollection(name: string)`
-
-Create a new collection by giving it a name and document type.
-
-```ts
-const users = q.createCollection<User>("users");
-```
-
-
-### Collection
-
-
-#### `.set(id: string, data: T): Promise<void>`
-
-Insert a new document to the collection.
-This will throw an error if the document already exists.
-
-
-```ts
-await users.set(userId, user)
-```
-
-#### `.get(id: string): Promise<Document<T> | null>`
-Get a document by id.
-
-```ts
-const document = await users.get(userId)
-// {
-//     id: userId,
-//     ts: 000, // the timestamp when created or last updated
-//     data: {} // the data you have stored
-// }
-```
-
-#### `.delete(id: string): Promise<void>`
-
-Delete a document by id.
-
-```ts
-await users.delete(userId)
-```
-
-#### `.update(id: string, data: T): Promise<void>`
-
-Update a document by id.
-This will throw an error if the document does not exist.
-
-```ts
-user.name = "New Name"
-await users.update(userId, user)
-```
-
-#### `.createIndex(options: CreateIndexOptions<T>): Index<T>`
-Create a new index on the collection.
-The terms field will be strongly typed depending on the type you have passed in when creating the collection.
-
-```ts
-const usersByOrganization = users.createIndex({
-    name: "users_by_organization",
-    terms: ["organization"],
-});
-```
-
-### Index
-
-#### `.match(query): Promise<Document<T>[]>`
-
-Search for matches in the index.
-The `query` argument is strongly typed depending on the terms you have passed in when creating the index.
-
-```ts
-const upstashEmployees = await usersByOrganization.match({ 
-    organization: "Upstash" 
-  });
-```
+See the [documentation](https://upstash.com/docs/oss/sdks/ts/query/overview) for more information.

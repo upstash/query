@@ -21,6 +21,7 @@ export class Index<TData extends Data, TTerms extends DotNotation<TData>[]> {
   private readonly terms: TTerms;
   private readonly redis: Redis;
   private readonly interceptor: Interceptor<TData>;
+  private deleted = false;
 
   private readonly enc: EncoderDecoder;
 
@@ -172,4 +173,14 @@ export class Index<TData extends Data, TTerms extends DotNotation<TData>[]> {
 
     return documents;
   };
+
+  public async delete(): Promise<void> {
+    const documents = await this.collection.list();
+    const tx = this.redis.multi();
+    await this.removeFromIndex(
+      tx,
+      documents.map((d) => d.id),
+    );
+    await tx.exec();
+  }
 }

@@ -441,3 +441,25 @@ test("match cleans up broken references", async () => {
   expect(found.length).toEqual(1);
   expect(found[0].id).toEqual("id2");
 });
+
+describe("delete", () => {
+  test("removes the index data", async () => {
+    const c = new Collection<{ hello: string }>({
+      name: crypto.randomUUID(),
+      redis: Redis.fromEnv({ automaticDeserialization: false }),
+    });
+    const i = c.createIndex({ name: crypto.randomUUID(), terms: ["hello"] });
+
+    await c.set("1", { hello: "1" });
+    await c.set("2", { hello: "2" });
+    await c.set("3", { hello: "3" });
+
+    const matches = await i.match({ hello: "3" });
+    expect(matches.length).toEqual(1);
+
+    await i.delete();
+    // I hate this as much as you, but I couldn't get it to work with `.throws`
+    const matchesAfterDelete = await i.match({ hello: "3" });
+    expect(matchesAfterDelete.length).toEqual(0);
+  });
+});
