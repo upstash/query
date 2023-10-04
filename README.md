@@ -11,7 +11,7 @@
 
 `@upstash/query` offers secondary indexing and search capabilities for Upstash Redis. It is fully managed by Upstash and scales automatically.
 
-This library tested well but not yet production ready. We are looking for feedback: Please open an issue if you have any questions or suggestions.
+This library is tested well but not yet production ready. We are looking for feedback: Please open an issue if you have any questions or suggestions.
 
 ## Features
 - [x] **E2E Typesafe**: Fully typed API with TypeScript generics to offer the best developer experience.
