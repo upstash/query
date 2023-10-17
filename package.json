@@ -1,12 +1,11 @@
 {
   "name": "@upstash/query",
-  "version": "0.0.1-canary.0",
+  "version": "0.0.2-canary.2",
   "description": "Secondary indexing for Redis",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/upstash/query.git"
   },
-  "module": "./dist/index.js",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "keywords": [
@@ -42,6 +41,5 @@
   },
   "dependencies": {
     "crypto-js": "^4.1.1"
-  },
-  "type": "module"
+  }
 }
