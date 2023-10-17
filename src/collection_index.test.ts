@@ -450,6 +450,14 @@ describe("delete", () => {
     });
     const i = c.createIndex({ name: crypto.randomUUID(), terms: ["hello"] });
 
+
+
+    type X = Parameters<typeof c.createIndex>[0]["terms"]
+    const x: X = [""]
+
+
+
+
     await c.set("1", { hello: "1" });
     await c.set("2", { hello: "2" });
     await c.set("3", { hello: "3" });

@@ -45,7 +45,7 @@ export class Interceptor<TData extends Data> {
    * Returns a function that can be used to unregister the callback.
    */
   public listen(event: Event, callback: Callback<TData>): () => void {
-    const id = crypto.randomUUID();
+    const id = Math.random().toString()
 
     this.callbacks[event][id] = callback;
 

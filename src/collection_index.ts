@@ -6,6 +6,9 @@ import type { DotNotation } from "./dot-notation";
 import type { EncoderDecoder } from "./encoding";
 import { Event, Interceptor } from "./interceptor";
 import { ArrToKeys, Data, Document } from "./types";
+import sha256 from 'crypto-js/sha256';
+import Hex from 'crypto-js/enc-hex';
+
 
 export type IndexConfig<TData extends Data, TTerms extends DotNotation<TData>[]> = {
   name: string;
@@ -119,22 +122,13 @@ export class Index<TData extends Data, TTerms extends DotNotation<TData>[]> {
 
   private hashTerms = async (terms: Record<ArrToKeys<TTerms>, unknown>): Promise<string> => {
     const keys = Object.keys(terms).sort() as TTerms;
-    const bufs: Uint8Array[] = [];
+    let buf = ""
     for (const key of keys) {
-      bufs.push(new TextEncoder().encode(key as string));
-      bufs.push(new TextEncoder().encode(this.enc.encode(terms[key]!)));
+      buf += key as string;
+      buf += this.enc.encode(terms[key]!)
     }
-    const buf = new Uint8Array(bufs.reduce((acc, b) => acc + b.length, 0));
-    let offset = 0;
-    for (const b of bufs) {
-      buf.set(b, offset);
-      offset += b.length;
-    }
+    return Hex.stringify(sha256(buf))
 
-    const hash = await crypto.subtle.digest("SHA-256", buf);
-    return Array.from(new Uint8Array(hash))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
   };
 
   public match = async (
