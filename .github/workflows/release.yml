@@ -35,7 +35,7 @@ jobs:
         run: bun install
 
       - name: Build package
-        run: bun build
+        run: bun run build
 
       - name: Authenticate Registry
         run: npm set "//registry.npmjs.org/:_authToken" ${{ secrets.NPM_TOKEN }}
