@@ -97,7 +97,3 @@ type User = {
   ```
 
 
-
-## Documentation
-
-See the [documentation](https://upstash.com/docs/oss/sdks/ts/query/overview) for more information.
