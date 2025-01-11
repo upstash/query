@@ -21,19 +21,21 @@ jobs:
         with:
           node-version: lts/*
 
-      - name: Install bun
-        run:   curl -fsSL https://bun.sh/install | bash
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
            
       - name: Set package version
         run: |
           ~/.bun/bin/bun ./scripts/set-version.js . ${{ env.VERSION }}
           echo "export const VERSION='${{ env.VERSION }}'" > ./src/version.ts
 
-      - name: Install
-        run: ~/.bun/bin/bun install
+      - name: Install dependencies
+        run: bun install
 
       - name: Build package
-        run: ~/.bun/bin/bun run build
+        run: bun run build
 
       - name: Authenticate Registry
         run: npm set "//registry.npmjs.org/:_authToken" ${{ secrets.NPM_TOKEN }}
